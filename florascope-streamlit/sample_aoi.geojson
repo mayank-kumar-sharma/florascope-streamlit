@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sample Farm Site — Gujarat, India"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [72.85, 21.15],
+            [72.92, 21.15],
+            [72.92, 21.22],
+            [72.85, 21.22],
+            [72.85, 21.15]
+          ]
+        ]
+      }
+    }
+  ]
+}
