@@ -85,7 +85,8 @@ def generate_demo_analysis(geojson_data: dict) -> dict:
     area = validated.get("area_ha_approx", 100)
     current_year = datetime.now().year
     start_year = current_year - 10
-    random.seed(42)
+    seed_val = int(abs(centroid.get("lat", 0) * 1000 + centroid.get("lon", 0) * 1000)) % 99999
+    random.seed(seed_val)
     base_trees = random.uniform(5, 25)
     base_shrub = random.uniform(20, 50)
     base_crop = random.uniform(10, 30)
