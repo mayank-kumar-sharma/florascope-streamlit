@@ -473,7 +473,7 @@ def page_pre_feasibility():
             s = analysis.get("soil_carbon", {}) or {}
             p = analysis.get("protected_areas", {}) or {}
 
-            r1, r2, r3, r4 = st.columns(4)
+            r1, r2, r3 = st.columns(3)
             with r1:
                 st.metric("Mean Elevation (m)", t.get("mean_elevation_m", 0))
                 st.metric("Mean Slope (deg)", t.get("mean_slope_deg", 0))
@@ -483,9 +483,6 @@ def page_pre_feasibility():
             with r3:
                 st.metric("Mean SOC (g/kg)", s.get("mean_soc_g_per_kg", 0))
                 st.metric("SOC Max (g/kg)", s.get("max_soc_g_per_kg", 0))
-            with r4:
-                st.metric("Protected Overlap", "Yes" if p.get("overlaps_protected_area") else "No")
-                st.metric("Protected Area Count", p.get("protected_area_count", 0))
 
             st.divider()
             st.markdown(eligibility.get("narrative", ""))
