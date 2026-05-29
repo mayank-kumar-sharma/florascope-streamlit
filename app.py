@@ -1,5 +1,7 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+from dotenv import load_dotenv
+load_dotenv()
 
 import json
 import tempfile
@@ -17,6 +19,33 @@ from modules.geometry_tools import (
 )
 from modules.audit_engine import run_full_audit
 from modules.canopy_tree_analysis import demo_canopy_analysis
+
+
+GEE_AVAILABLE = False
+try:
+    import ee
+    from modules.gee_analysis import initialize_gee, run_full_analysis
+    from modules.canopy_tree_analysis import (
+        analyze_canopy_cover_timeseries,
+        estimate_tree_count,
+        analyze_canopy_height,
+        estimate_biomass
+    )
+    try:
+        if "gee" in st.secrets:
+            key_data = json.loads(st.secrets["gee"]["service_account_key"])
+            GEE_AVAILABLE = initialize_gee(json.dumps(key_data))
+        else:
+            gee_key_path = os.path.join(os.path.dirname(__file__), 'gee_key.json')
+            if os.path.exists(gee_key_path):
+                with open(gee_key_path) as f:
+                    key_data = json.load(f)
+                GEE_AVAILABLE = initialize_gee(json.dumps(key_data))
+    except Exception as e:
+        GEE_AVAILABLE = False
+except Exception as e:
+    print(f"✗ GEE not available: {e}")
+    GEE_AVAILABLE = False
 
 
 st.set_page_config(layout="wide", page_title="FloraScope", page_icon="🌿")
@@ -327,14 +356,31 @@ def page_pre_feasibility():
         st.error(f"Validation failed: {e}")
         return
 
-    if st.button("🚀 Run Demo Analysis"):
+    if GEE_AVAILABLE:
+        st.info("🛰️ Using real satellite data")
+    else:
+        st.warning("⚠️ Using demo data")
+
+    if st.button("🚀 Run Analysis"):
         try:
             with st.spinner("Analysing..."):
-                analysis = generate_demo_analysis(st.session_state["geojson"])
+                if GEE_AVAILABLE:
+                    analysis = run_full_analysis(st.session_state["geojson"])
+                    # Check if LULC data is empty/failed
+                    lulc = analysis.get("lulc_timeseries", {})
+                    lulc_empty = all(
+                        sum(v.values()) == 0 
+                        for v in lulc.values()
+                    ) if lulc else True
+                    if lulc_empty:
+                        demo = generate_demo_analysis(st.session_state["geojson"])
+                        analysis["lulc_timeseries"] = demo["lulc_timeseries"]
+                else:
+                    analysis = generate_demo_analysis(st.session_state["geojson"])
                 eligibility = run_eligibility_assessment(analysis)
                 st.session_state["analysis"] = analysis
                 st.session_state["eligibility"] = eligibility
-            st.success("Demo analysis completed.")
+            st.success("Analysis completed.")
             st.balloons()
         except Exception as e:
             st.error(f"Analysis failed: {e}")
@@ -403,6 +449,7 @@ def page_pre_feasibility():
             )
             fig.update_layout(template="plotly_white", height=420, yaxis_title="Forest loss (ha)", xaxis_title="Year")
             st.plotly_chart(fig, use_container_width=True)
+            st.caption("Forest loss data from Hansen Global Forest Change dataset (real satellite data)")
             st.success("Forest loss chart generated.")
         except Exception as e:
             st.error(f"Could not render Forest Loss tab: {e}")
