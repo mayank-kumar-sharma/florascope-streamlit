@@ -484,11 +484,24 @@ def get_soil_carbon(aoi: ee.Geometry) -> Dict:
             bestEffort=True
         )
 
-        info = stats.getInfo()
+        info = stats.getInfo() if stats is not None else None
+        if info is None:
+            return {"mean_soc_g_per_kg": 0, "min_soc_g_per_kg": 0, "max_soc_g_per_kg": 0}
+        
+        # Safely extract and divide values, checking for None before division
+        mean_val = info.get("ocd_0-5cm_mean_mean")
+        mean_soc = round(mean_val / 10, 1) if mean_val is not None else 0
+        
+        min_val = info.get("ocd_0-5cm_mean_min")
+        min_soc = round(min_val / 10, 1) if min_val is not None else 0
+        
+        max_val = info.get("ocd_0-5cm_mean_max")
+        max_soc = round(max_val / 10, 1) if max_val is not None else 0
+        
         return {
-            "mean_soc_g_per_kg": round(info.get("ocd_0-5cm_mean_mean", 0) / 10, 1),
-            "min_soc_g_per_kg": round(info.get("ocd_0-5cm_mean_min", 0) / 10, 1),
-            "max_soc_g_per_kg": round(info.get("ocd_0-5cm_mean_max", 0) / 10, 1),
+            "mean_soc_g_per_kg": mean_soc,
+            "min_soc_g_per_kg": min_soc,
+            "max_soc_g_per_kg": max_soc,
         }
     except Exception as e:
         print(f"SOC analysis error: {e}")
